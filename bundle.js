@@ -10,18 +10,23 @@ const PipeConnect = require('./pipeConnect.js');
 const PipeCorner = require('./pipeCorner.js');
 const PipeCenter = require('./pipeCenter.js');
 const PipeStraight = require('./pipeStraight.js');
+const PipeTank = require('./pipeTank.js');
+const PipeThin = require('./pipeThin.js');
 
 /* Global variables */
 var canvas = document.getElementById('screen');
 var game = new Game(canvas, update, render);
 var image = new Image();
-image.src = 'assets/pipes.png';
+image.src = 'assets/pipes_edited.png';
+var menu = new Image();
+menu.src = 'assets/menu.png';
 var backdrop = new Image();
 backdrop.src = 'assets/pipes_backdrop.jpg';
 var grid = new Array(169);
+var tank = [-1, -1, -1, -1, -1];;
 var next = new PipeCross(0);
 var waterSpeed = 1;
-var state = 'start';
+var state = 'pause';
 grid[29] = new PipeConnect({x: 388, y: 128, piece: 0});
 grid[139] = new PipeConnect({x: 772, y: 640, piece: 1});
 var flashTimer = 0;
@@ -30,6 +35,7 @@ var timer = 0;
 var forFlash = true;
 var score = 0;
 var levelScore = 23;
+var lastState = 'start';
 
 
 canvas.onclick = function(event) {
@@ -71,6 +77,18 @@ canvas.oncontextmenu = function (event)
 	  }	
 }
 
+window.onkeydown = function (event) {
+    switch (event.keyCode) {
+		case 27:
+			if(state == 'pause') state = lastState;
+			else {
+				lastState = state;
+				state = 'pause';
+			}
+			break;
+	}
+}
+
 //finds the array location of the click
 function findGrid(position){
 	var x = position.x;
@@ -93,39 +111,36 @@ function findGrid(position){
 
 //place the next peice in the array location
 function placeNext(number){
-	switch(next.getName()){
-		case "cross":
-			grid[number] = next;
-			break;
-		case "corner":
-			grid[number] = next;
-			break;
-		
-	}
+	grid[number] = next;
 	grid[number].place({x:((number%13)*64)+196, y: Math.floor((number/13))*64});
-	switch(Math.floor(Math.random()*7))
+	switch(Math.floor(Math.random()*13))
 	{
 		case 0:
 			next = new PipeCross(0);
 			break;
 		case 1:
 		case 2:
+		case 3:
 			next = new PipeCorner(Math.floor(Math.random()*4));
 			break;
-		case 3:
 		case 4:
-			next = new PipeCenter(Math.floor(Math.random()*4));
-			break;
 		case 5:
 		case 6:
+			next = new PipeCenter(Math.floor(Math.random()*4));
+			break;
+		case 7:
+		case 8:
+		case 9:
 			next = new PipeStraight(Math.floor(Math.random()*4));
 			break;
+		case 10:
+			next = new PipeTank(Math.floor(Math.random()*4));
+			break;
+		case 11:
+		case 12:
+			next = new PipeThin(Math.floor(Math.random()*4));
+			break;
 	}
-}
-
-
-function placePoints(){
-	
 }
 
 /**
@@ -214,7 +229,6 @@ function update(elapsedTime) {
 		  }//end if (timer)
 		  break;
   }//end switch
-  if(grid[139].findState() != 'empty') state = 'won';
 }
 
 //fills pipes and checks for a win or loss
@@ -222,14 +236,46 @@ function fillPipes(){
 	var lostCheck = 0;
 	for(var i = 0; i < grid.length; i++){
 		if(grid[i] != null){
-			var temp = grid[i].getExits();
+			var exit = grid[i].getExits();
 			switch(grid[i].findState()){
+				case 'full':
+					if(exit[0] == 0){
+						if(i-13 >= 0){
+							if(grid[i-13] != null && grid[i-13].findState() == 'empty'){
+								grid[i-13].setFilling(2);
+								grid[i-13].fill(overFill);
+							}
+						}
+					}
+					if(exit[1] == 0){
+						if(i+1 < grid.length){
+							if(grid[i+1] != null && grid[i+1].findState() == 'empty'){
+								grid[i+1].setFilling(3);
+								grid[i+1].fill(overFill-waterSpeed);
+							}
+						}
+					}
+					if(exit[2] == 0){
+						if(i+13 < grid.length){
+							if(grid[i+13] != null && grid[i+13].findState() == 'empty'){
+								grid[i+13].setFilling(0);
+								grid[i+13].fill(overFill-waterSpeed);
+							}
+						}
+					}
+					if(exit[3] == 0){
+						if(i-1 >= 0){
+							if(grid[i-1] != null && grid[i-1].findState() == 'empty'){
+								grid[i-1].setFilling(1);
+								grid[i-1].fill(overFill);
+							}
+						}
+					}
+					break;
 				case 'filling':
 					lostCheck = 1;
-				case 'full':
 					var overFill = grid[i].fill(waterSpeed);
 					if(overFill >= 0){
-						var exit = grid[i].getExits();
 						if(exit[0] == 0){
 							if(i-13 >= 0){
 								if(grid[i-13] != null && grid[i-13].findState() != 'full'){
@@ -268,7 +314,9 @@ function fillPipes(){
 		}//end if
 	}//end for
 	if(lostCheck == 0) state = 'lost';
+	if(grid[139].findState() != 'empty') state = 'won';
 }
+
 /**
   * @function render
   * Renders the current game state into a back buffer.
@@ -355,10 +403,13 @@ function render(elapsedTime, ctx) {
 		  ctx.font = "bold 100px Arial";
 		  ctx.fillText("FAILURE",300, 310);
 		  break;
+	  case 'pause':
+		  ctx.drawImage(menu,-2,-2);
+		  break;
   }//end switch
 }
 
-},{"./game":2,"./pipeCenter.js":3,"./pipeConnect.js":4,"./pipeCorner.js":5,"./pipeCross.js":6,"./pipeStraight.js":7}],2:[function(require,module,exports){
+},{"./game":2,"./pipeCenter.js":3,"./pipeConnect.js":4,"./pipeCorner.js":5,"./pipeCross.js":6,"./pipeStraight.js":7,"./pipeTank.js":8,"./pipeThin.js":9}],2:[function(require,module,exports){
 "use strict";
 
 /**
@@ -485,7 +536,7 @@ PipeCenter.prototype.place = function(position){
 
 //returns this pipes name
 PipeCenter.prototype.getName = function(){
-	return "corner";
+	return "center";
 }
 
 //increases the wterlevel in the pipe
@@ -639,19 +690,6 @@ function PipeConnect(parm) {
 }
 
 
-/**
- * @function updates the player object
- * {DOMHighResTimeStamp} time the elapsed time since the last frame
- */
-PipeConnect.prototype.update = function(time) {
-	switch(this.state){
-		case 'filling':
-			break;
-		case 'full':
-			break;
-	}
-}
-
 PipeConnect.prototype.fill = function(amount){
 	var overFlow = -1;
 	if(this.state == 'filling'){
@@ -670,6 +708,11 @@ PipeConnect.prototype.setFilling = function(entrance){
 		this.direction[0] = 1;
 		this.state = 'filling';
 	}
+}
+
+//returns this pipes name
+PipeConnect.prototype.getName = function(){
+	return "connect";
 }
 
 //returns the state
@@ -1104,7 +1147,7 @@ PipeStraight.prototype.place = function(position){
 
 //returns this pipes name
 PipeStraight.prototype.getName = function(){
-	return "corner";
+	return "straight";
 }
 
 //increases the wterlevel in the pipe
@@ -1234,6 +1277,322 @@ PipeStraight.prototype.render = function(time, ctx) {
 						this.pipes,
 						// source rectangle
 						65, 1, 30, 30,
+						// destination rectangle
+						this.x, this.y, 64, 64
+					);
+					break;
+			}
+    }//end switch
+}
+},{}],8:[function(require,module,exports){
+"use strict";
+
+
+/**
+ * @module exports the pipe class
+ */
+module.exports = exports = PipeTank;
+
+/**
+ * @constructor pipe
+ * Creates a new pipe object
+ * @param {Postition} position object specifying an x and y
+ */
+function PipeTank(rotation) {
+  this.x = 64; //x position
+  this.y = 64; //y position
+  this.rotation = rotation; //Rotation of pipe
+  this.waterLevel = 0;  //how much water is in pipe from 0 to 64
+  this.state = 'empty'; 
+  this.pipes = new Image();
+  this.pipes.src = 'assets/pipes_edited.png';
+  this.direction = [0,0,0,0]; // 0 means an exit, 1 means an entrance
+}
+
+//rotates the pipe
+PipeTank.prototype.rotate = function(){
+	
+}
+
+//places the pipe on the screen with given x and y positions
+PipeTank.prototype.place = function(position){
+	this.x = position.x;
+	this.y = position.y;
+}
+
+//returns this pipes name
+PipeTank.prototype.getName = function(){
+	return "cross";
+}
+
+//increases the wterlevel in the pipe
+PipeTank.prototype.fill = function(amount){
+	var overFlow = -1;
+	this.waterLevel += amount;
+	if(this.waterLevel>255){
+		overFlow = this.waterLevel - 255;
+		this.waterLevel = 255;
+		this.state = 'full';
+	}//end if
+	return overFlow;
+}
+
+//returns array to find the exits
+PipeTank.prototype.getExits = function(){
+	return this.direction;
+}
+
+//returns the state
+PipeTank.prototype.findState = function(){
+	return this.state;
+}
+
+//sets the pipe that is filling
+PipeTank.prototype.setFilling = function(entrance){
+	this.state = 'filling';
+	switch(entrance){
+		case 0:
+			this.direction[0] = 1;
+			break;
+		case 1:
+			this.direction[1] = 1;
+			break;
+		case 2:
+			this.direction[2] = 1;
+			break;
+		case 3:
+			this.direction[3] = 1;
+			break;
+	}//end switch
+}
+
+/**
+ * @function renders the pipe into the provided context
+ * {DOMHighResTimeStamp} time the elapsed time since the last frame
+ * {CanvasRenderingContext2D} ctx the context to render into
+ */
+PipeTank.prototype.render = function(time, ctx) {
+	switch(this.state){
+		case 'filling':
+		case 'full':
+			//draws the water
+			ctx.fillStyle = 'blue';
+			//water in upper part
+			switch(this.direction[0]){
+				case 1:
+					if(this.waterLevel < 32) ctx.fillRect(this.x+30,this.y,4,this.waterLevel);
+					else ctx.fillRect(this.x+30,this.y,5,32);
+					break;
+			}//end switch
+			//water in right part
+			switch(this.direction[1]){
+				case 1:
+					if(this.waterLevel < 32 ) ctx.fillRect(this.x+64-this.waterLevel,this.y+26,this.waterLevel,4);
+					else ctx.fillRect(this.x+32,this.y+26,32,4)
+					break;
+			}//end switch
+			//water in bottom part
+			switch(this.direction[2]){
+				case 1:
+					if(this.waterLevel < 32) ctx.fillRect(this.x+30,this.y+26-this.waterLevel,4,this.waterLevel);
+					else ctx.fillRect(this.x+30,this.y+32,4,32);
+					break;
+			}//end switch
+			//water in left part
+			switch(this.direction[3]){
+				case 1:
+					if(this.waterLevel < 32 ) ctx.fillRect(this.x,this.y+34,this.waterLevel,4);
+					else ctx.fillRect(this.x,this.y+26,32,4);
+					break;
+			}//end switch
+			if(this.waterLevel > 32) ctx.fillRect(this.x+32-this.waterLevel/16,this.y+32-this.waterLevel/16,this.waterLevel/8,this.waterLevel/8)
+		case 'empty':
+			//draws the pipe image
+			ctx.drawImage(
+				// image
+				this.pipes,
+				// source rectangle
+				97, 1, 30, 30,
+				// destination rectangle
+				this.x, this.y, 64, 64
+		    );
+    }//end switch
+}
+},{}],9:[function(require,module,exports){
+"use strict";
+
+
+/**
+ * @module exports the pipe class
+ */
+module.exports = exports = PipeThin;
+
+/**
+ * @constructor pipe
+ * Creates a new pipe object
+ * @param {Postition} position object specifying an x and y
+ */
+function PipeThin(rotation) {
+  this.x = 64; //x position
+  this.y = 64; //y position
+  this.rotation = rotation; //Rotation of pipe
+  this.waterLevel = 0;  //how much water is in pipe from 0 to 64
+  this.state = 'empty'; 
+  this.pipes = new Image();
+  this.pipes.src = 'assets/pipes_edited.png';
+  this.direction;// 0 means an exit, 1 means an entrance
+  switch(this.rotation){
+	  case 0:
+	  case 2:
+		this.direction = [-1,0,-1,0];
+		break;
+	  case 1:
+	  case 3:
+		this.direction = [0,-1,0,-1];
+		break;
+  }
+}
+
+//rotates the pipe
+PipeThin.prototype.rotate = function(){
+	if(this.state == 'empty'){
+		switch(this.rotation){
+		  case 0:
+		  case 2:
+			this.direction = [0,-1,0,-1];
+			break;
+		  case 1:
+		  case 3:
+			this.direction = [-1,0,-1,0];
+			break;
+	  }//end switch
+		this.rotation++;
+		if(this.rotation == 4) this.rotation = 0;
+	}//end if
+}
+
+//places the pipe on the screen with given x and y positions
+PipeThin.prototype.place = function(position){
+	this.x = position.x;
+	this.y = position.y;
+}
+
+//returns this pipes name
+PipeThin.prototype.getName = function(){
+	return "straight";
+}
+
+//increases the wterlevel in the pipe
+PipeThin.prototype.fill = function(amount){
+	var overFlow = -1;
+	if(this.state == 'filling'){
+		this.waterLevel += amount;
+		if(this.waterLevel>31){
+			overFlow = this.waterLevel - 31;
+			this.waterLevel = 31;
+			this.state = 'full';
+		}//end if
+	}//end if
+	return overFlow;
+}
+
+//returns array to find the exits
+PipeThin.prototype.getExits = function(){
+	return this.direction;
+}
+
+//returns the state
+PipeThin.prototype.findState = function(){
+	return this.state;
+}
+
+//sets the pipe that is filling
+PipeThin.prototype.setFilling = function(entrance){
+	switch(entrance){
+		case 0:
+			if(this.direction[0] == 0) {
+				this.direction[0] = 1;
+				this.state = 'filling';
+			}//end if
+			break;
+		case 1:
+			if(this.direction[1] == 0) {
+				this.direction[1] = 1;
+				this.state = 'filling';
+			}//end if
+			break;
+		case 2:
+			if(this.direction[2] == 0) {
+				this.direction[2] = 1;
+				this.state = 'filling';
+			}//end if
+			break;
+		case 3:
+			if(this.direction[3] == 0) {
+				this.direction[3] = 1;
+				this.state = 'filling';
+			}//end if
+			break;
+	}//end switch
+}
+
+/**
+ * @function renders the pipe into the provided context
+ * {DOMHighResTimeStamp} time the elapsed time since the last frame
+ * {CanvasRenderingContext2D} ctx the context to render into
+ */
+PipeThin.prototype.render = function(time, ctx) {
+	switch(this.state){
+		case 'filling':
+		case 'full':
+			//draws the water
+			ctx.fillStyle = 'blue';
+			//water in upper part
+			switch(this.direction[0]){
+				case 1:
+					ctx.fillRect(this.x+30,this.y,4,this.waterLevel*2);
+					break;
+			}//end switch
+			//water in right part
+			switch(this.direction[1]){
+				case 1:
+					ctx.fillRect(this.x+64-this.waterLevel*2,this.y+26,this.waterLevel*2,4);
+					break;
+			}//end switch
+			//water in bottom part
+			switch(this.direction[2]){
+				case 1:
+					ctx.fillRect(this.x+30,this.y+64-this.waterLevel*2,4,this.waterLevel*2);
+					break;
+			}//end switch
+			//water in left part
+			switch(this.direction[3]){
+				case 1:
+					ctx.fillRect(this.x,this.y+26,this.waterLevel*2,4);
+					break;
+			}//end switch
+		case 'empty':
+			switch(this.rotation){
+				case 0:
+				case 2:
+					//draws the pipe image
+					ctx.drawImage(
+						// image
+						this.pipes,
+						// source rectangle
+						65, 97, 30, 30,
+						// destination rectangle
+						this.x, this.y, 64, 64
+					);
+					break;
+				case 1:
+				case 3:
+					//draws the pipe image
+					ctx.drawImage(
+						// image
+						this.pipes,
+						// source rectangle
+						97, 97, 30, 30,
 						// destination rectangle
 						this.x, this.y, 64, 64
 					);

@@ -9,18 +9,23 @@ const PipeConnect = require('./pipeConnect.js');
 const PipeCorner = require('./pipeCorner.js');
 const PipeCenter = require('./pipeCenter.js');
 const PipeStraight = require('./pipeStraight.js');
+const PipeTank = require('./pipeTank.js');
+const PipeThin = require('./pipeThin.js');
 
 /* Global variables */
 var canvas = document.getElementById('screen');
 var game = new Game(canvas, update, render);
 var image = new Image();
-image.src = 'assets/pipes.png';
+image.src = 'assets/pipes_edited.png';
+var menu = new Image();
+menu.src = 'assets/menu.png';
 var backdrop = new Image();
 backdrop.src = 'assets/pipes_backdrop.jpg';
 var grid = new Array(169);
+var tank = [-1, -1, -1, -1, -1];;
 var next = new PipeCross(0);
 var waterSpeed = 1;
-var state = 'start';
+var state = 'pause';
 grid[29] = new PipeConnect({x: 388, y: 128, piece: 0});
 grid[139] = new PipeConnect({x: 772, y: 640, piece: 1});
 var flashTimer = 0;
@@ -29,6 +34,7 @@ var timer = 0;
 var forFlash = true;
 var score = 0;
 var levelScore = 23;
+var lastState = 'start';
 
 
 canvas.onclick = function(event) {
@@ -70,6 +76,18 @@ canvas.oncontextmenu = function (event)
 	  }	
 }
 
+window.onkeydown = function (event) {
+    switch (event.keyCode) {
+		case 27:
+			if(state == 'pause') state = lastState;
+			else {
+				lastState = state;
+				state = 'pause';
+			}
+			break;
+	}
+}
+
 //finds the array location of the click
 function findGrid(position){
 	var x = position.x;
@@ -92,39 +110,36 @@ function findGrid(position){
 
 //place the next peice in the array location
 function placeNext(number){
-	switch(next.getName()){
-		case "cross":
-			grid[number] = next;
-			break;
-		case "corner":
-			grid[number] = next;
-			break;
-		
-	}
+	grid[number] = next;
 	grid[number].place({x:((number%13)*64)+196, y: Math.floor((number/13))*64});
-	switch(Math.floor(Math.random()*7))
+	switch(Math.floor(Math.random()*13))
 	{
 		case 0:
 			next = new PipeCross(0);
 			break;
 		case 1:
 		case 2:
+		case 3:
 			next = new PipeCorner(Math.floor(Math.random()*4));
 			break;
-		case 3:
 		case 4:
-			next = new PipeCenter(Math.floor(Math.random()*4));
-			break;
 		case 5:
 		case 6:
+			next = new PipeCenter(Math.floor(Math.random()*4));
+			break;
+		case 7:
+		case 8:
+		case 9:
 			next = new PipeStraight(Math.floor(Math.random()*4));
 			break;
+		case 10:
+			next = new PipeTank(Math.floor(Math.random()*4));
+			break;
+		case 11:
+		case 12:
+			next = new PipeThin(Math.floor(Math.random()*4));
+			break;
 	}
-}
-
-
-function placePoints(){
-	
 }
 
 /**
@@ -213,7 +228,6 @@ function update(elapsedTime) {
 		  }//end if (timer)
 		  break;
   }//end switch
-  if(grid[139].findState() != 'empty') state = 'won';
 }
 
 //fills pipes and checks for a win or loss
@@ -221,14 +235,46 @@ function fillPipes(){
 	var lostCheck = 0;
 	for(var i = 0; i < grid.length; i++){
 		if(grid[i] != null){
-			var temp = grid[i].getExits();
+			var exit = grid[i].getExits();
 			switch(grid[i].findState()){
+				case 'full':
+					if(exit[0] == 0){
+						if(i-13 >= 0){
+							if(grid[i-13] != null && grid[i-13].findState() == 'empty'){
+								grid[i-13].setFilling(2);
+								grid[i-13].fill(overFill);
+							}
+						}
+					}
+					if(exit[1] == 0){
+						if(i+1 < grid.length){
+							if(grid[i+1] != null && grid[i+1].findState() == 'empty'){
+								grid[i+1].setFilling(3);
+								grid[i+1].fill(overFill-waterSpeed);
+							}
+						}
+					}
+					if(exit[2] == 0){
+						if(i+13 < grid.length){
+							if(grid[i+13] != null && grid[i+13].findState() == 'empty'){
+								grid[i+13].setFilling(0);
+								grid[i+13].fill(overFill-waterSpeed);
+							}
+						}
+					}
+					if(exit[3] == 0){
+						if(i-1 >= 0){
+							if(grid[i-1] != null && grid[i-1].findState() == 'empty'){
+								grid[i-1].setFilling(1);
+								grid[i-1].fill(overFill);
+							}
+						}
+					}
+					break;
 				case 'filling':
 					lostCheck = 1;
-				case 'full':
 					var overFill = grid[i].fill(waterSpeed);
 					if(overFill >= 0){
-						var exit = grid[i].getExits();
 						if(exit[0] == 0){
 							if(i-13 >= 0){
 								if(grid[i-13] != null && grid[i-13].findState() != 'full'){
@@ -267,7 +313,9 @@ function fillPipes(){
 		}//end if
 	}//end for
 	if(lostCheck == 0) state = 'lost';
+	if(grid[139].findState() != 'empty') state = 'won';
 }
+
 /**
   * @function render
   * Renders the current game state into a back buffer.
@@ -353,6 +401,9 @@ function render(elapsedTime, ctx) {
 		  ctx.fillStyle = 'black';
 		  ctx.font = "bold 100px Arial";
 		  ctx.fillText("FAILURE",300, 310);
+		  break;
+	  case 'pause':
+		  ctx.drawImage(menu,-2,-2);
 		  break;
   }//end switch
 }

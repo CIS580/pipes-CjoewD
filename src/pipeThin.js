@@ -4,14 +4,14 @@
 /**
  * @module exports the pipe class
  */
-module.exports = exports = PipeCenter;
+module.exports = exports = PipeThin;
 
 /**
  * @constructor pipe
  * Creates a new pipe object
  * @param {Postition} position object specifying an x and y
  */
-function PipeCenter(rotation) {
+function PipeThin(rotation) {
   this.x = 64; //x position
   this.y = 64; //y position
   this.rotation = rotation; //Rotation of pipe
@@ -22,35 +22,27 @@ function PipeCenter(rotation) {
   this.direction;// 0 means an exit, 1 means an entrance
   switch(this.rotation){
 	  case 0:
-		this.direction = [-1,0,0,0];
+	  case 2:
+		this.direction = [-1,0,-1,0];
 		break;
 	  case 1:
-		this.direction = [0,-1,0,0];
-		break;
-	  case 2:
-		this.direction = [0,0,-1,0];
-		break;
 	  case 3:
-		this.direction = [0,0,0,-1];
+		this.direction = [0,-1,0,-1];
 		break;
   }
 }
 
 //rotates the pipe
-PipeCenter.prototype.rotate = function(){
+PipeThin.prototype.rotate = function(){
 	if(this.state == 'empty'){
 		switch(this.rotation){
 		  case 0:
-			this.direction = [0,-1,0,0];
+		  case 2:
+			this.direction = [0,-1,0,-1];
 			break;
 		  case 1:
-			this.direction = [0,0,-1,0];
-			break;
-		  case 2:
-			this.direction = [0,0,0,-1];
-			break;
 		  case 3:
-			this.direction = [-1,0,0,0];
+			this.direction = [-1,0,-1,0];
 			break;
 	  }//end switch
 		this.rotation++;
@@ -59,24 +51,24 @@ PipeCenter.prototype.rotate = function(){
 }
 
 //places the pipe on the screen with given x and y positions
-PipeCenter.prototype.place = function(position){
+PipeThin.prototype.place = function(position){
 	this.x = position.x;
 	this.y = position.y;
 }
 
 //returns this pipes name
-PipeCenter.prototype.getName = function(){
-	return "center";
+PipeThin.prototype.getName = function(){
+	return "straight";
 }
 
 //increases the wterlevel in the pipe
-PipeCenter.prototype.fill = function(amount){
+PipeThin.prototype.fill = function(amount){
 	var overFlow = -1;
 	if(this.state == 'filling'){
 		this.waterLevel += amount;
-		if(this.waterLevel>63){
-			overFlow = this.waterLevel - 63;
-			this.waterLevel = 63;
+		if(this.waterLevel>31){
+			overFlow = this.waterLevel - 31;
+			this.waterLevel = 31;
 			this.state = 'full';
 		}//end if
 	}//end if
@@ -84,17 +76,17 @@ PipeCenter.prototype.fill = function(amount){
 }
 
 //returns array to find the exits
-PipeCenter.prototype.getExits = function(){
+PipeThin.prototype.getExits = function(){
 	return this.direction;
 }
 
 //returns the state
-PipeCenter.prototype.findState = function(){
+PipeThin.prototype.findState = function(){
 	return this.state;
 }
 
 //sets the pipe that is filling
-PipeCenter.prototype.setFilling = function(entrance){
+PipeThin.prototype.setFilling = function(entrance){
 	switch(entrance){
 		case 0:
 			if(this.direction[0] == 0) {
@@ -128,7 +120,7 @@ PipeCenter.prototype.setFilling = function(entrance){
  * {DOMHighResTimeStamp} time the elapsed time since the last frame
  * {CanvasRenderingContext2D} ctx the context to render into
  */
-PipeCenter.prototype.render = function(time, ctx) {
+PipeThin.prototype.render = function(time, ctx) {
 	switch(this.state){
 		case 'filling':
 		case 'full':
@@ -136,53 +128,54 @@ PipeCenter.prototype.render = function(time, ctx) {
 			ctx.fillStyle = 'blue';
 			//water in upper part
 			switch(this.direction[0]){
-				case 0:
-					if(this.waterLevel >= 32) ctx.fillRect(this.x+30,this.y+64-this.waterLevel,4,this.waterLevel-32);
-					break;
 				case 1:
-					if(this.waterLevel < 32) ctx.fillRect(this.x+30,this.y,4,this.waterLevel);
-					else ctx.fillRect(this.x+30,this.y,5,32);
+					ctx.fillRect(this.x+30,this.y,4,this.waterLevel*2);
 					break;
 			}//end switch
 			//water in right part
 			switch(this.direction[1]){
-				case 0:
-					if(this.waterLevel >= 32) ctx.fillRect(this.x+32,this.y+26,this.waterLevel-32,4);
-					break;
 				case 1:
-					if(this.waterLevel < 32 ) ctx.fillRect(this.x+64-this.waterLevel,this.y+26,this.waterLevel,4);
-					else ctx.fillRect(this.x+32,this.y+26,32,4)
+					ctx.fillRect(this.x+64-this.waterLevel*2,this.y+26,this.waterLevel*2,4);
 					break;
 			}//end switch
 			//water in bottom part
 			switch(this.direction[2]){
-				case 0:
-					if(this.waterLevel >= 32) ctx.fillRect(this.x+30,this.y+32,4,this.waterLevel-32);
-					break;
 				case 1:
-					if(this.waterLevel < 32) ctx.fillRect(this.x+30,this.y+64-this.waterLevel,4,this.waterLevel);
-					else ctx.fillRect(this.x+30,this.y+32,4,32);
+					ctx.fillRect(this.x+30,this.y+64-this.waterLevel*2,4,this.waterLevel*2);
 					break;
 			}//end switch
 			//water in left part
 			switch(this.direction[3]){
-				case 0:
-					if(this.waterLevel >= 32) ctx.fillRect(this.x+63-this.waterLevel,this.y+26,this.waterLevel-32,4);
-					break;
 				case 1:
-					if(this.waterLevel < 32 ) ctx.fillRect(this.x,this.y+26,this.waterLevel,4);
-					else ctx.fillRect(this.x,this.y+26,32,4);
+					ctx.fillRect(this.x,this.y+26,this.waterLevel*2,4);
 					break;
 			}//end switch
 		case 'empty':
-			//draws the pipe image
-			ctx.drawImage(
-				// image
-				this.pipes,
-				// source rectangle
-				32*this.rotation+1, 65, 30, 30,
-				// destination rectangle
-				this.x, this.y, 64, 64
-		    );
+			switch(this.rotation){
+				case 0:
+				case 2:
+					//draws the pipe image
+					ctx.drawImage(
+						// image
+						this.pipes,
+						// source rectangle
+						65, 97, 30, 30,
+						// destination rectangle
+						this.x, this.y, 64, 64
+					);
+					break;
+				case 1:
+				case 3:
+					//draws the pipe image
+					ctx.drawImage(
+						// image
+						this.pipes,
+						// source rectangle
+						97, 97, 30, 30,
+						// destination rectangle
+						this.x, this.y, 64, 64
+					);
+					break;
+			}
     }//end switch
 }

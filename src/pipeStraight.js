@@ -58,7 +58,7 @@ PipeStraight.prototype.place = function(position){
 
 //returns this pipes name
 PipeStraight.prototype.getName = function(){
-	return "corner";
+	return "straight";
 }
 
 //increases the wterlevel in the pipe

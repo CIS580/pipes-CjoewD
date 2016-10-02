@@ -31,19 +31,6 @@ function PipeConnect(parm) {
 }
 
 
-/**
- * @function updates the player object
- * {DOMHighResTimeStamp} time the elapsed time since the last frame
- */
-PipeConnect.prototype.update = function(time) {
-	switch(this.state){
-		case 'filling':
-			break;
-		case 'full':
-			break;
-	}
-}
-
 PipeConnect.prototype.fill = function(amount){
 	var overFlow = -1;
 	if(this.state == 'filling'){
@@ -62,6 +49,11 @@ PipeConnect.prototype.setFilling = function(entrance){
 		this.direction[0] = 1;
 		this.state = 'filling';
 	}
+}
+
+//returns this pipes name
+PipeConnect.prototype.getName = function(){
+	return "connect";
 }
 
 //returns the state
