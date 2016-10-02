@@ -15,10 +15,6 @@ const PipeThin = require('./pipeThin.js');
 /* Global variables */
 var canvas = document.getElementById('screen');
 var game = new Game(canvas, update, render);
-var image = new Image();
-image.src = 'assets/pipes_edited.png';
-var menu = new Image();
-menu.src = 'assets/menu.png';
 var backdrop = new Image();
 backdrop.src = 'assets/pipes_backdrop.jpg';
 var grid = new Array(169);
@@ -35,6 +31,25 @@ var forFlash = true;
 var score = 0;
 var levelScore = 23;
 var lastState = 'start';
+//images
+var pipes = new Image();
+pipes.src = 'assets/pipes_edited.png';
+var menu = new Image();
+menu.src = 'assets/menu.png';
+//sounds
+var backgroundSound = new Audio();
+backgroundSound.src = 'assets/backgroundSound.png';
+backgroundSound.loop();
+var pause = new Audio();
+pause.src = 'assets/pause.png';
+var success = new Audio();
+success.src = 'assets/success.png';
+var failure = new Audio();
+failure.src = 'assets/failure.png';
+var place = new Audio();
+place.src = 'assets/place.png';
+var rotate = new Audio();
+rotate.src = 'assets/rotate.png';
 
 
 canvas.onclick = function(event) {
