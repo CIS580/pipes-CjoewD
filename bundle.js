@@ -16,10 +16,6 @@ const PipeThin = require('./pipeThin.js');
 /* Global variables */
 var canvas = document.getElementById('screen');
 var game = new Game(canvas, update, render);
-var image = new Image();
-image.src = 'assets/pipes_edited.png';
-var menu = new Image();
-menu.src = 'assets/menu.png';
 var backdrop = new Image();
 backdrop.src = 'assets/pipes_backdrop.jpg';
 var grid = new Array(169);
@@ -36,6 +32,27 @@ var forFlash = true;
 var score = 0;
 var levelScore = 23;
 var lastState = 'start';
+//images
+var pipes = new Image();
+pipes.src = 'assets/pipes_edited.png';
+var menu = new Image();
+menu.src = 'assets/menu.png';
+//sounds
+var backgroundSound = new Audio();
+backgroundSound.src = 'assets/backgroundSound.wav';
+backgroundSound.loop = true;
+backgroundSound.volume = 0.3;
+backgroundSound.play();
+var pause = new Audio();
+pause.src = 'assets/pause.wav';
+var success = new Audio();
+success.src = 'assets/success.wav';
+var failure = new Audio();
+failure.src = 'assets/failure.wav';
+var place = new Audio();
+place.src = 'assets/place.wav';
+var rotate = new Audio();
+rotate.src = 'assets/rotate.wav';
 
 
 canvas.onclick = function(event) {
@@ -56,6 +73,7 @@ canvas.onclick = function(event) {
 		  var gridNumber = findGrid({x: x, y: y});
 		  if(gridNumber > -1 && grid[gridNumber] == null) {
 			  placeNext(gridNumber);
+			  place.play();
 			  if(levelScore > 0) levelScore--;
 		  }
 		  break;
@@ -72,7 +90,10 @@ canvas.oncontextmenu = function (event)
 		case 'countdown':
 		case 'running':
 			var gridNumber = findGrid({x: x, y: y});
-			if(grid[gridNumber] != null) grid[gridNumber].rotate();
+			if(grid[gridNumber] != null) {
+				grid[gridNumber].rotate();
+				rotate.play();
+			}
 			break;
 	  }	
 }
@@ -80,6 +101,7 @@ canvas.oncontextmenu = function (event)
 window.onkeydown = function (event) {
     switch (event.keyCode) {
 		case 27:
+			pause.play();
 			if(state == 'pause') state = lastState;
 			else {
 				lastState = state;
@@ -243,7 +265,7 @@ function fillPipes(){
 						if(i-13 >= 0){
 							if(grid[i-13] != null && grid[i-13].findState() == 'empty'){
 								grid[i-13].setFilling(2);
-								grid[i-13].fill(overFill);
+								grid[i-13].fill(waterSpeed);
 							}
 						}
 					}
@@ -251,7 +273,7 @@ function fillPipes(){
 						if(i+1 < grid.length){
 							if(grid[i+1] != null && grid[i+1].findState() == 'empty'){
 								grid[i+1].setFilling(3);
-								grid[i+1].fill(overFill-waterSpeed);
+								grid[i+1].fill(0);
 							}
 						}
 					}
@@ -259,7 +281,7 @@ function fillPipes(){
 						if(i+13 < grid.length){
 							if(grid[i+13] != null && grid[i+13].findState() == 'empty'){
 								grid[i+13].setFilling(0);
-								grid[i+13].fill(overFill-waterSpeed);
+								grid[i+13].fill(0);
 							}
 						}
 					}
@@ -267,7 +289,7 @@ function fillPipes(){
 						if(i-1 >= 0){
 							if(grid[i-1] != null && grid[i-1].findState() == 'empty'){
 								grid[i-1].setFilling(1);
-								grid[i-1].fill(overFill);
+								grid[i-1].fill(waterSpeed);
 							}
 						}
 					}
@@ -313,8 +335,14 @@ function fillPipes(){
 			}//end switch
 		}//end if
 	}//end for
-	if(lostCheck == 0) state = 'lost';
-	if(grid[139].findState() != 'empty') state = 'won';
+	if(lostCheck == 0) {
+		if(state == 'running') failure.play();
+		state = 'lost';
+	}
+	if(grid[139].findState() != 'empty') {
+		success.play();
+		state = 'won';
+	}
 }
 
 /**
@@ -1401,7 +1429,7 @@ PipeTank.prototype.render = function(time, ctx) {
 			//water in left part
 			switch(this.direction[3]){
 				case 1:
-					if(this.waterLevel < 32 ) ctx.fillRect(this.x,this.y+34,this.waterLevel,4);
+					if(this.waterLevel < 32 ) ctx.fillRect(this.x,this.y+26,this.waterLevel,4);
 					else ctx.fillRect(this.x,this.y+26,32,4);
 					break;
 			}//end switch

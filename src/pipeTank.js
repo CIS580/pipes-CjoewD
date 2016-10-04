@@ -114,7 +114,7 @@ PipeTank.prototype.render = function(time, ctx) {
 			//water in left part
 			switch(this.direction[3]){
 				case 1:
-					if(this.waterLevel < 32 ) ctx.fillRect(this.x,this.y+34,this.waterLevel,4);
+					if(this.waterLevel < 32 ) ctx.fillRect(this.x,this.y+26,this.waterLevel,4);
 					else ctx.fillRect(this.x,this.y+26,32,4);
 					break;
 			}//end switch
